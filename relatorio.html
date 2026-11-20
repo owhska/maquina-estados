@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Trabalho Prático: Máquina de Estados — Group 8</title>
+<style>
+  body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; line-height: 1.45; color: #222; margin: 0 8px; }
+  h1 { font-size: 18pt; text-align: center; margin-bottom: 2px; }
+  .sub { text-align: center; color: #555; margin-top: 0; }
+  h2 { font-size: 13.5pt; border-bottom: 1px solid #999; padding-bottom: 3px; margin-top: 22px; }
+  h3 { font-size: 11.5pt; margin-top: 14px; margin-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 12px 0; font-size: 10pt; }
+  th, td { border: 1px solid #888; padding: 4px 6px; text-align: left; vertical-align: top; }
+  th { background: #e8e8e8; }
+  pre { background: #f5f5f5; border: 1px solid #ccc; padding: 8px; font-size: 9pt; white-space: pre-wrap; }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; }
+  .fig { text-align: center; margin: 10px 0; }
+  .fig img { width: 100%; }
+  .legenda { font-size: 9.5pt; color: #444; text-align: center; }
+  .ok { color: #1a7f37; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<h1>Trabalho Prático: Máquina de Estados</h1>
+<p class="sub">Disciplina: Sistemas Computacionais · Grupo 8 · Modalidade: em grupo</p>
+<p class="sub"><strong>Integrantes:</strong> [preencher nomes] &nbsp;|&nbsp; <strong>Repositório Git:</strong> [inserir link]</p>
+
+<h2>1. Objetivo</h2>
+<h3>Problema modelado</h3>
+<p>Modelamos o comportamento de uma <strong>catraca de metrô</strong>. A catraca permanece bloqueada até que uma moeda ou bilhete válido seja apresentado. Com a catraca liberada, o usuário passa, e o sensor de passagem faz a catraca bloquear novamente. Se o usuário não passar a tempo, a catraca volta a bloquear por timeout. Em caso de falha mecânica ou eletrônica, a catraca entra em manutenção até ser reparada.</p>
+<h3>Regras do sistema</h3>
+<ol>
+  <li>A catraca inicia no estado <code>BLOQUEADA</code>.</li>
+  <li>Somente uma moeda válida libera a catraca (<code>BLOQUEADA → LIBERADA</code>).</li>
+  <li>Uma moeda inválida não altera o estado.</li>
+  <li>A passagem detectada pelo sensor leva a catraca a <code>PASSAGEM</code> e, ao concluir a passagem, de volta a <code>BLOQUEADA</code>.</li>
+  <li>Se a catraca estiver liberada e o tempo expirar, ela volta a bloquear.</li>
+  <li>Qualquer falha, exceto quando já está em manutenção, leva a catraca a <code>MANUTENCAO</code>.</li>
+  <li>Somente um reparo retira a catraca da manutenção, e ela volta a <code>BLOQUEADA</code>.</li>
+  <li>Eventos sem transição mapeada para o estado atual são ignorados.</li>
+</ol>
+
+<h2>2. Especificação do Sistema</h2>
+<h3>2.1 Estados</h3>
+<table>
+  <tr><th>Estado</th><th>Descrição</th></tr>
+  <tr><td><code>BLOQUEADA</code></td><td>Estado inicial. Catraca travada, aguardando moeda válida.</td></tr>
+  <tr><td><code>LIBERADA</code></td><td>Moeda validada. A passagem está liberada por tempo limitado.</td></tr>
+  <tr><td><code>PASSAGEM</code></td><td>Usuário atravessando. O sensor ainda não detectou a saída.</td></tr>
+  <tr><td><code>MANUTENCAO</code></td><td>Falha detectada. Catraca fora de operação até o reparo.</td></tr>
+</table>
+
+<h3>2.2 Eventos</h3>
+<table>
+  <tr><th>Evento</th><th>Origem</th></tr>
+  <tr><td><code>MOEDA_VALIDA</code></td><td>Leitor de moedas/bilhetes aceita o crédito.</td></tr>
+  <tr><td><code>MOEDA_INVALIDA</code></td><td>Leitor rejeita o crédito.</td></tr>
+  <tr><td><code>PASSOU</code></td><td>Sensor de passagem detecta o usuário.</td></tr>
+  <tr><td><code>TIMEOUT</code></td><td>Temporizador de liberação expira.</td></tr>
+  <tr><td><code>FALHA</code></td><td>Diagnóstico interno detecta defeito.</td></tr>
+  <tr><td><code>REPARO</code></td><td>Técnico conclui a manutenção.</td></tr>
+</table>
+
+<h3>2.3 Transições</h3>
+<table>
+  <tr><th>ID</th><th>Estado atual</th><th>Evento</th><th>Próximo estado</th></tr>
+  <tr><td>T1</td><td>BLOQUEADA</td><td>MOEDA_VALIDA</td><td>LIBERADA</td></tr>
+  <tr><td>T2</td><td>BLOQUEADA</td><td>MOEDA_INVALIDA</td><td>BLOQUEADA</td></tr>
+  <tr><td>T3</td><td>BLOQUEADA</td><td>FALHA</td><td>MANUTENCAO</td></tr>
+  <tr><td>T4</td><td>LIBERADA</td><td>PASSOU</td><td>PASSAGEM</td></tr>
+  <tr><td>T5</td><td>LIBERADA</td><td>TIMEOUT</td><td>BLOQUEADA</td></tr>
+  <tr><td>T6</td><td>LIBERADA</td><td>FALHA</td><td>MANUTENCAO</td></tr>
+  <tr><td>T7</td><td>PASSAGEM</td><td>PASSOU</td><td>BLOQUEADA</td></tr>
+  <tr><td>T8</td><td>PASSAGEM</td><td>FALHA</td><td>MANUTENCAO</td></tr>
+  <tr><td>T9</td><td>MANUTENCAO</td><td>REPARO</td><td>BLOQUEADA</td></tr>
+</table>
+
+<h3>2.4 Implementação</h3>
+<p>As transições ficam em uma tabela estática. A função <code>proximo_estado</code> percorre a tabela e retorna o destino, ou o próprio estado atual quando não há transição mapeada:</p>
+<pre>Estado proximo_estado(Estado atual, Evento evento)
+{
+    for (int i = 0; i &lt; NUM_TRANSICOES; i++) {
+        if (TABELA[i].origem == atual &amp;&amp; TABELA[i].evento == evento) {
+            return TABELA[i].destino;
+        }
+    }
+    return atual;   /* evento ignorado */
+}</pre>
+
+<h2>3. Diagrama de Estados</h2>
+<div class="fig"><img src="diagrama.png" alt="Diagrama de estados da catraca"></div>
+<p class="legenda">Figura 1: Diagrama de estados da catraca. O círculo duplo indica o estado inicial. Os rótulos das setas são os eventos.</p>
+
+<h2>4. Caminhos Independentes</h2>
+<p>Os caminhos abaixo cobrem combinações de transições, incluindo casos de passagem normal, timeout, falha em diferentes estados e eventos ignorados.</p>
+<table>
+  <tr><th>Caminho</th><th>Sequência de estados e eventos</th><th>Estado final esperado</th></tr>
+  <tr><td>P1</td><td>BLOQUEADA –MOEDA_INVALIDA→ BLOQUEADA</td><td>BLOQUEADA</td></tr>
+  <tr><td>P2</td><td>BLOQUEADA –MOEDA_VALIDA→ LIBERADA –PASSOU→ PASSAGEM –PASSOU→ BLOQUEADA</td><td>BLOQUEADA</td></tr>
+  <tr><td>P3</td><td>BLOQUEADA –MOEDA_VALIDA→ LIBERADA –TIMEOUT→ BLOQUEADA</td><td>BLOQUEADA</td></tr>
+  <tr><td>P4</td><td>BLOQUEADA –FALHA→ MANUTENCAO –REPARO→ BLOQUEADA</td><td>BLOQUEADA</td></tr>
+  <tr><td>P5</td><td>BLOQUEADA –MOEDA_VALIDA→ LIBERADA –FALHA→ MANUTENCAO –FALHA→ MANUTENCAO –MOEDA_VALIDA→ MANUTENCAO –PASSOU→ MANUTENCAO</td><td>MANUTENCAO</td></tr>
+  <tr><td>P6</td><td>BLOQUEADA –MOEDA_VALIDA→ LIBERADA –PASSOU→ PASSAGEM –FALHA→ MANUTENCAO</td><td>MANUTENCAO</td></tr>
+  <tr><td>P7</td><td>BLOQUEADA –MOEDA_VALIDA→ LIBERADA –PASSOU→ PASSAGEM –TIMEOUT→ PASSAGEM –MOEDA_VALIDA→ PASSAGEM</td><td>PASSAGEM</td></tr>
+</table>
+
+<h3>4.1 Complexidade Ciclomática</h3>
+<p>A complexidade ciclomática <em>V(G)</em> mede o número de caminhos independentes de uma função e é calculada por <em>V(G) = E − N + 2P</em>, onde E são as arestas, N os nós e P os componentes conectados do grafo de controle. Em funções com decisões simples, equivale a <em>número de pontos de decisão + 1</em>. Cada nó de decisão (<code>if</code>, <code>for</code>, <code>&amp;&amp;</code> e cada <code>case</code>) acrescenta um caminho.</p>
+<p>A tabela abaixo foi calculada com a ferramenta <code>lizard</code> sobre <code>src/maquina.c</code>. Ela conta o <code>default</code> dos <code>switch</code> como um caminho adicional.</p>
+<table>
+  <tr><th>Função</th><th>Pontos de decisão</th><th>V(G)</th><th>Caminhos básicos a cobrir</th></tr>
+  <tr><td><code>proximo_estado</code></td><td><code>for</code>, <code>if</code>, <code>&amp;&amp;</code></td><td>4</td><td>4</td></tr>
+  <tr><td><code>nome_estado</code></td><td><code>switch</code> com 4 <code>case</code> + <code>default</code></td><td>5</td><td>5</td></tr>
+  <tr><td><code>nome_evento</code></td><td><code>switch</code> com 6 <code>case</code> + <code>default</code></td><td>7</td><td>7</td></tr>
+</table>
+<p>Para <code>proximo_estado</code>, os quatro caminhos básicos são:</p>
+<ol>
+  <li>O evento está mapeado para o estado atual (ex.: <code>BLOQUEADA</code> com <code>MOEDA_VALIDA</code>, retorna <code>LIBERADA</code>).</li>
+  <li>A origem coincide, mas o evento não (ex.: <code>BLOQUEADA</code> com <code>PASSOU</code>), e a busca continua.</li>
+  <li>A origem não coincide, e a busca passa para a próxima linha da tabela.</li>
+  <li>A tabela termina sem correspondência, e a função retorna o estado atual (evento ignorado).</li>
+</ol>
+<p>Cada um desses caminhos é exercitado pelos testes de transições (seção 5.2). Para <code>nome_estado</code> e <code>nome_evento</code>, cada <code>case</code> e o <code>default</code> têm teste próprio.</p>
+<p><strong>Relação com os caminhos independentes da seção 4:</strong> os caminhos P1 a P7 são comportamentos da máquina, descritos como sequências de estados e eventos. A complexidade ciclomática é uma métrica do código, por função. Por isso, o número de caminhos P1 a P7 não precisa ser igual aos valores de V(G) da tabela.</p>
+
+<h2>5. Casos de Teste</h2>
+<p>Todos os testes são automatizados, em C, e executados com <code>make test</code>. O código completo está no repositório Git. Aqui são mostrados apenas os trechos citados.</p>
+
+<h3>5.1 Testes de Estados</h3>
+<p>Verificam que cada um dos quatro estados é alcançável a partir de alguma transição e que possui nome válido. Também cobrem os seis nomes de evento e o <code>default</code> de <code>nome_estado</code> e <code>nome_evento</code>.</p>
+<pre>CHECAR(proximo_estado(EST_BLOQUEADA, EVT_MOEDA_VALIDA) == EST_LIBERADA,
+       "LIBERADA deve ser alcançável por moeda válida");</pre>
+<p>Cobertura: <span class="ok">4 de 4 estados</span>.</p>
+
+<h3>5.2 Testes de Transições</h3>
+<p>Há um teste para cada uma das nove transições da tabela (T1 a T9). Também são testados seis eventos ignorados, que devem manter o estado atual.</p>
+<pre>CHECAR(proximo_estado(EST_PASSAGEM, EVT_FALHA) == EST_MANUTENCAO,
+       "T8: PASSAGEM --FALHA--> MANUTENCAO");</pre>
+<p>Cobertura: <span class="ok">9 de 9 transições</span>.</p>
+
+<h3>5.3 Testes de Caminhos</h3>
+<p>Cada caminho da seção 4 é executado como uma sequência de eventos a partir do estado inicial. O estado final é comparado com o valor esperado.</p>
+<pre>/* P5: falha durante a liberação, com eventos ignorados em manutenção */
+{
+    Evento e[] = { EVT_MOEDA_VALIDA, EVT_FALHA, EVT_FALHA,
+                   EVT_MOEDA_VALIDA, EVT_PASSOU };
+    CHECAR(executar(EST_BLOQUEADA, e, 5) == EST_MANUTENCAO, "P5 falhou");
+}</pre>
+<p>Cobertura: <span class="ok">7 de 7 caminhos</span>.</p>
+
+<h3>5.4 Resultado da execução</h3>
+<pre>=== Testes da Máquina de Estados (Catraca) ===
+[Testes de estados]
+[Testes de transições]
+[Testes de caminhos independentes]
+
+Resultado: 38 de 38 verificações passaram.</pre>
+
+<h2>6. Considerações Finais</h2>
+<p>[Preencher com a síntese do grupo: principais dificuldades, decisões de modelagem, como a tabela de transições facilitou os testes e o que cada integrante aprendeu.]</p>
+
+</body>
+</html>

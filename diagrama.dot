@@ -1,0 +1,20 @@
+digraph CatracaMetro {
+    rankdir=LR;
+    node [shape=circle, fontname="Helvetica", fontsize=12, width=1.6, fixedsize=true];
+    edge [fontname="Helvetica", fontsize=10];
+
+    BLOQUEADA  [shape=doublecircle];
+    LIBERADA;
+    PASSAGEM;
+    MANUTENCAO;
+
+    BLOQUEADA  -> LIBERADA    [label="MOEDA_VALIDA"];
+    BLOQUEADA  -> BLOQUEADA   [label="MOEDA_INVALIDA"];
+    BLOQUEADA  -> MANUTENCAO  [label="FALHA"];
+    LIBERADA   -> PASSAGEM    [label="PASSOU"];
+    LIBERADA   -> BLOQUEADA   [label="TIMEOUT"];
+    LIBERADA   -> MANUTENCAO  [label="FALHA"];
+    PASSAGEM   -> BLOQUEADA   [label="PASSOU"];
+    PASSAGEM   -> MANUTENCAO  [label="FALHA"];
+    MANUTENCAO -> BLOQUEADA   [label="REPARO"];
+}
