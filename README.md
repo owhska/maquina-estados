@@ -1,7 +1,5 @@
 # Máquina de Estados — Catraca de Metrô
 
-Trabalho Prático de Sistemas Computacionais (Grupo 8).
-
 ## Problema modelado
 
 Uma catraca de metrô libera a passagem somente após a validação de uma moeda ou bilhete. Após a passagem, ela volta a bloquear. Em caso de falha, entra em manutenção até ser reparada.
